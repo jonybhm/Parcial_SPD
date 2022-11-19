@@ -1,0 +1,257 @@
+//Jonathan De Castro 1ºH
+
+#include <LiquidCrystal.h>
+#include <Keypad.h>
+#include <Servo.h>
+
+#define ROJO 2
+#define VERDE 13
+
+
+Servo myservo;  // objeto servo
+
+const byte ROWS = 4; //filas
+const byte COLS = 4; //columnas
+
+
+char keys[ROWS][COLS] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+
+
+byte rowPins[ROWS] = {11, 10, 9, 8}; 
+byte colPins[COLS] = {7, 6, 5, 4}; 
+LiquidCrystal pantalla = LiquidCrystal(A1,A0,A2,A3,A4,A5);
+Keypad teclado = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+
+void setup()
+{ 
+  myservo.attach(3);
+  Serial.begin(9600);
+  pantalla.begin(16,2);
+  pinMode(ROJO,OUTPUT);
+  pinMode(VERDE,OUTPUT);
+}
+
+int cant =0;
+char arrayNum[2];
+int edadClienteAnt=0;
+int sectorElegido;
+int totalPermitido = 200;
+int cantidadActual =0;
+int cantidadActualG =0;
+int cantidadActualV =0;
+int cantidadActualP =0;
+bool puedeEntrar = false;
+bool sobreVenta = false;
+int posicionMolinete = 0;
+
+void loop()
+{
+  myservo.write(posicionMolinete);
+  char keyIngresada = teclado.getKey(); //detecta la tecla qeu toca el usuario
+   
+  ingresoClientes (keyIngresada);
+  
+}
+
+void encenderApagarLeds(char color)
+{
+  if(color == 'R')
+  {
+	
+    digitalWrite(ROJO, HIGH);
+   	delay(2000);
+    digitalWrite(ROJO, LOW);
+   	delay(1000);
+  }else{
+	
+    digitalWrite(VERDE, HIGH);
+   	delay(2000);
+    digitalWrite(VERDE, LOW);
+   	delay(1000);
+  
+  }
+}
+
+void giroMolinete() 
+{
+
+  for (posicionMolinete = 0; posicionMolinete <= 180; posicionMolinete += 1) //0 a 180° de a un grado
+  { 
+    myservo.write(posicionMolinete);
+    delay(15);
+  }
+
+  for (posicionMolinete = 180; posicionMolinete >= 0; posicionMolinete -= 1) 
+  { 
+    myservo.write(posicionMolinete);             
+    delay(15);                      
+  }
+}
+
+
+
+
+void ingresoClientes (char key)
+{
+
+  if(key != NO_KEY ) //si el usuario no toca ninguna tecla
+  {
+     
+    
+      switch(key)
+      {
+          case 'A':
+        	  pantalla.clear();
+              pantalla.setCursor(0,0);
+              pantalla.print("Sector: ");
+
+              pantalla.setCursor(8,0);
+              sectorElegido = 1;
+              pantalla.print("General");    		
+          break;
+          case 'B':
+              pantalla.clear();
+              pantalla.setCursor(0,0);
+              pantalla.print("Sector: ");
+
+              pantalla.setCursor(8,0);
+              sectorElegido = 2;
+              pantalla.print("VIP"); 
+          break;
+          case 'C':
+              pantalla.clear();
+              pantalla.setCursor(0,0);
+              pantalla.print("Sector: ");
+
+              pantalla.setCursor(8,0);
+              sectorElegido = 3;
+              pantalla.print("Premium");     		
+          break;
+          case '0':
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+          case '8':
+          case '9':
+            if(cant==2)//si la variable de control es 2( 2 teclas ingresadas), limita a 99
+            {
+              cant=0;
+
+            }
+            arrayNum[cant] = key;
+            cant++;
+            if(cant)
+            {
+              int edadClienteNuevo = atoi(arrayNum);  
+              if(edadClienteAnt != edadClienteNuevo)
+              {
+                edadClienteAnt = edadClienteNuevo;
+                pantalla.clear(); //el clear solo se ejecuta cuando cambio de edad
+              }
+            }
+          pantalla.setCursor(0,0);
+      	  pantalla.print("Edad.: ");
+          pantalla.setCursor(8,0);
+          pantalla.print(edadClienteAnt);
+          puedeEntrar = false;
+          sobreVenta = false;
+
+          break;
+
+          case 'D':
+            switch(sectorElegido)
+            {
+                case 1://"General"
+                  if(cantidadActualG <= totalPermitido * 0.6)
+                  {
+                    puedeEntrar = true;
+                    cantidadActualG++;
+                    
+                  }else
+                  {
+                    sobreVenta = true;
+                  }
+                break;
+                case 2://"VIP"
+                  if(cantidadActualV <= totalPermitido * 0.3)
+                  {
+                    puedeEntrar = true;
+                    cantidadActualV++;
+                  }else
+                  {
+                    sobreVenta = true;
+                  }
+                break;
+                case 3://"Premium"
+                  if(cantidadActualP < totalPermitido * 0.1)
+                  {
+                    puedeEntrar = true;
+                    cantidadActualP++;
+                  }else
+                  {
+                    sobreVenta = true;
+                  }
+              break;
+            }
+
+              if(edadClienteAnt >= 18 && puedeEntrar == true)
+              {
+                
+                cantidadActual++;
+                puedeEntrar = false;
+                sobreVenta = false;
+                pantalla.clear();
+                pantalla.setCursor(0,0);
+                pantalla.print("Puede entrar");
+                pantalla.setCursor(0,1);
+                pantalla.print("Cant actual: ");
+                pantalla.print(cantidadActual);
+                encenderApagarLeds('V');
+                giroMolinete();
+                
+              }else
+              {
+				
+                pantalla.clear();
+                pantalla.setCursor(0,0);
+                pantalla.print("NO Puede entrar");
+                pantalla.setCursor(0,1);
+                encenderApagarLeds('R');
+                if(sobreVenta == true)
+                {
+                  pantalla.clear();
+                  pantalla.setCursor(0,0);
+                  pantalla.print("SOBREVENTA");
+                  pantalla.setCursor(0,1);
+                  pantalla.print("Cant actual: ");
+                  pantalla.print(cantidadActual);
+                  sobreVenta = false;
+                }else
+                {
+                  pantalla.print("Cant actual: ");
+                  pantalla.print(cantidadActual);
+                  sobreVenta = false;
+              
+                }
+                
+              }
+        	
+          break;
+      }
+    }
+}
+
+  
+
+  
+    
