@@ -1,5 +1,7 @@
 # Parcial_SPD
 Parcial SPD Arduino
+Jonathan De Castro
+1°H
 
 Link youtube: 
 
